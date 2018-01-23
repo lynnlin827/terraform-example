@@ -1,5 +1,5 @@
 plugins
-terraform.tfvars
+*.tfvars
 terraform.tfstate
 terraform.tfstate.*
 .vscode
