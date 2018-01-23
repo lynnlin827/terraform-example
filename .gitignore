@@ -1,0 +1,6 @@
+plugins
+terraform.tfvars
+terraform.tfstate
+terraform.tfstate.*
+.vscode
+*.pem
