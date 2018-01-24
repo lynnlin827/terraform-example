@@ -1,6 +1,6 @@
 plugins
 *.tfvars
-terraform.tfstate
-terraform.tfstate.*
+*.tfstate
+*.tfstate.*
 .vscode
 *.pem
