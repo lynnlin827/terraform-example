@@ -16,6 +16,6 @@ $ brew install terraform
 
 ```
 $ terraform init
-$ terraform apply -var-file=CreateAnInstanceOnlyICanSSH/terraform_local.tfvars CreateAnInstanceOnlyICanSSH
-$ terraform destroy -var-file=CreateAnInstanceOnlyICanSSH/terraform_local.tfvars CreateAnInstanceOnlyICanSSH
+$ terraform apply CreateAnInstanceOnlyICanSSH
+$ terraform destroy CreateAnInstanceOnlyICanSSH
 ```
