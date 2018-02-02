@@ -16,6 +16,7 @@ DB_USERNAME=root
 DB_PASSWORD=password
 
 IMAGE_S3_BUCKET=tf-s3-laravel-demo-project
+IMAGE_DOMAIN=${image_domain}
 EOF
 chown www-data:www-data /home/ubuntu/laravel/.env
 php /home/ubuntu/laravel/artisan key:generate

@@ -75,7 +75,7 @@ resource "aws_route_table_association" "public_subnet_2b_routing" {
 }
 
 resource "aws_security_group" "sg_webserver" {
-  name = "tf-sg-allow-http-connection"
+  name = "tf-sg-webserver"
   vpc_id = "${aws_vpc.vpc.id}"
   ingress {
     from_port = 80
@@ -90,7 +90,7 @@ resource "aws_security_group" "sg_webserver" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags {
-    Name = "tf-sg-allow-http-connection"
+    Name = "tf-sg-webserver"
   }
 }
 
@@ -182,6 +182,38 @@ resource "aws_s3_bucket" "s3" {
   acl = "private"
 }
 
+resource "aws_cloudfront_distribution" "s3_cdn" {
+  origin {
+    domain_name = "${aws_s3_bucket.s3.bucket_domain_name}"
+    origin_id = "tf-s3-laravel-demo-project"
+  }
+  enabled = true
+  default_cache_behavior {
+    allowed_methods = ["GET", "HEAD"]
+    cached_methods = ["GET", "HEAD"]
+    default_ttl = 60
+    min_ttl = 0
+    max_ttl = 300
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+    target_origin_id = "tf-s3-laravel-demo-project"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+  price_class = "PriceClass_100"
+}
+
 # Instance Authorization
 data "aws_iam_policy_document" "iam_policy_ec2_default" {
   statement {
@@ -251,14 +283,21 @@ resource "aws_lb_listener" "alb_webserver_listen" {
   }
 }
 
+data "template_file" "user_data" {
+  template = "${file("CreateALaravelProjectBuiltByAMI/user_data.tpl")}"
+  vars {
+    image_domain = "${aws_cloudfront_distribution.s3_cdn.domain_name}"
+  }
+}
+
 resource "aws_launch_configuration" "as_launch_config" {
   name_prefix = "tf-as-launch-config-"
-  image_id = "ami-697dc611"
+  image_id = "ami-83ca70fb"
   instance_type = "t2.micro"
   key_name = "terraform"
   security_groups = ["${aws_security_group.sg_webserver.id}"]
   iam_instance_profile = "${aws_iam_instance_profile.iam_role_ec2_pofile.name}"
-  user_data = "${file("CreateALaravelProjectBuiltByAMI/user_data.sh")}"
+  user_data = "${data.template_file.user_data.rendered}"
   associate_public_ip_address = true
 }
 
@@ -271,26 +310,55 @@ resource "aws_autoscaling_group" "as_group" {
   vpc_zone_identifier = ["${aws_subnet.public_subnet_2a.id}", "${aws_subnet.public_subnet_2b.id}"]
   target_group_arns = ["${aws_lb_target_group.alb_webserver_tg.arn}"]
   depends_on = [
-    "aws_db_instance.mysql"
+    "aws_db_instance.mysql",
+    "aws_cloudfront_distribution.s3_cdn"
   ]
 }
 
-# # CDN & DNS
-# resource "aws_cloudfront_distribution" "webserver_cdn" {
-# }
+# CDN
+resource "aws_cloudfront_distribution" "webserver_cdn" {
+  origin {
+    domain_name = "${aws_lb.alb_webserver.dns_name}"
+    origin_id = "tf-alb-webserver"
 
-# resource "aws_cloudfront_distribution" "s3_cdn" {
-# }
-
-# resource "aws_route53_zone" "public_hosted_zone" {
-# }
-
-# resource "aws_route53_record" "domain_record_webserver" {
-# }
-
-# resource "aws_route53_record" "domain_record_s3" {
-# }
+    custom_origin_config {
+      http_port = 80
+      https_port = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols = ["TLSv1", "TLSv1.1", "TLSv1.2", "SSLv3"]
+    }
+  }
+  enabled = true
+  default_cache_behavior {
+    allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods = ["GET", "HEAD"]
+    default_ttl = 0
+    min_ttl = 0
+    max_ttl = 0
+    forwarded_values {
+      query_string = true
+      cookies {
+        forward = "none"
+      }
+    }
+    target_origin_id = "tf-alb-webserver"
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+  price_class = "PriceClass_100"
+}
 
 output "alb_dns" {
   value = "${aws_lb.alb_webserver.dns_name}"
+}
+
+output "cdn_dns" {
+  value = "${aws_cloudfront_distribution.webserver_cdn.domain_name}"
 }
