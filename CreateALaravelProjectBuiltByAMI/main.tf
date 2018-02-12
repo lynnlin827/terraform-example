@@ -292,7 +292,7 @@ data "template_file" "user_data" {
 
 resource "aws_launch_configuration" "as_launch_config" {
   name_prefix = "tf-as-launch-config-"
-  image_id = "ami-83ca70fb"
+  image_id = "ami-2550d15d"
   instance_type = "t2.micro"
   key_name = "terraform"
   security_groups = ["${aws_security_group.sg_webserver.id}"]
