@@ -284,7 +284,7 @@ resource "aws_lb_listener" "alb_webserver_listen" {
 }
 
 data "template_file" "user_data" {
-  template = "${file("CreateALaravelProjectBuiltByAMI/user_data.tpl")}"
+  template = "${file("user_data.tpl")}"
   vars {
     image_domain = "${aws_cloudfront_distribution.s3_cdn.domain_name}"
   }
@@ -292,7 +292,7 @@ data "template_file" "user_data" {
 
 resource "aws_launch_configuration" "as_launch_config" {
   name_prefix = "tf-as-launch-config-"
-  image_id = "ami-2550d15d"
+  image_id = "${var.ami}"
   instance_type = "t2.micro"
   key_name = "terraform"
   security_groups = ["${aws_security_group.sg_webserver.id}"]
