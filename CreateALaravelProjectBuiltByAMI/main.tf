@@ -336,7 +336,7 @@ resource "aws_cloudfront_distribution" "webserver_cdn" {
     min_ttl = 0
     max_ttl = 0
     forwarded_values {
-      query_string = true
+      query_string = false
       cookies {
         forward = "none"
       }
