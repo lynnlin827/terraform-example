@@ -257,7 +257,6 @@ resource "aws_autoscaling_group" "as_group" {
   max_size = 1
   desired_capacity = 1
   vpc_zone_identifier = ["${aws_subnet.public_subnet_2a.id}", "${aws_subnet.public_subnet_2b.id}"]
-  target_group_arns = ["${aws_lb_target_group.alb_webserver_tg.arn}"]
 }
 
 # Instance Authorization
